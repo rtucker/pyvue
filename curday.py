@@ -2,7 +2,8 @@
 
 fcurday = "../curday.dat.pristine"
 fcurdayout = "../Prevue/curday.dat"
-fnxtday = "../Prevue/nxtday.dat"
+fnxtday = "../nxtday.dat.pristine"
+fnxtdayout = "../Prevue/nxtday.dat"
 
 from collections import namedtuple
 from copy import copy
@@ -222,7 +223,8 @@ class Header(Thing):
         # Range from 1 to 366
         jd = int(time.strftime('%j', date))
 
-        jd -= 1
+        #XXX: don't decrement after Feb 29 on a leap year...
+        #jd -= 1
 
         jd %= 256
 
@@ -376,7 +378,8 @@ class ChannelInfo(Thing):
         # Range from 1 to 366
         jd = int(time.strftime('%j', date))
 
-        jd -= 1
+        #XXX: don't decrement after Feb 29 on a leap year...
+        #jd -= 1
 
         jd %= 256
 
