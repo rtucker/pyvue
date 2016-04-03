@@ -22,9 +22,6 @@ class Thing(object):
     _obj = None
 
     def __init__(self, b=None, fp=None, **kw):
-        if fp is not None and b is not None:
-            raise("can only choose b or fp")
-
         if b is not None:
             self.SetBytes(b)
             # ChannelListing will not be byte-exact in many cases
@@ -34,7 +31,7 @@ class Thing(object):
             b = copy(self._bytes)
             assert(bytes(self) == b)
         else:
-            self._create(kw)
+            self._create(**kw)
 
     def _readfile(self, fp):
         self._bytes = b''.join([b for b in read_byte(fp)])
@@ -67,24 +64,24 @@ HeaderFlagsTuple = namedtuple('HeaderFlags', 'bck fwd scrollspeed numads linespe
 
 class HeaderFlags(Thing):
     def _create(self,
-        bck='A',
-        fwd='E',
+        bck=b'A',
+        fwd=b'E',
         scrollspeed=3,
         numads=36,
         linesperad=5,
-        unk6='N',
+        unk6=b'N',
         # ETX
         # SOH
-        timezone=4,
-        unk8='Y',
-        unk9='Y',
-        unk10='N',
-        unk11='N',
-        unk12='Y',
-        unk13='Y',
-        unk14='N',
-        unk15='N',
-        unk16='l',
+        timezone=6,
+        unk8=b'Y',
+        unk9=b'Y',
+        unk10=b'N',
+        unk11=b'N',
+        unk12=b'Y',
+        unk13=b'Y',
+        unk14=b'N',
+        unk15=b'N',
+        unk16=b'l',
     ):
         self._obj = HeaderFlagsTuple(
             bck=bck,
@@ -157,11 +154,11 @@ class Header(Thing):
     def _create(self,
         flags=None,
         unk0=0,
-        drev='DREV 5',
-        icao='KROC',
-        city='Rochester',
+        drev=b'DREV 5',
+        icao=b'KROC',
+        city=b'Rochester',
         jdate=None,
-        numchans=1,
+        numchans=0,
         unk1=131,
         unk2=1348,
     ):
@@ -233,7 +230,7 @@ class Header(Thing):
     def SetNumChans(self, numchans):
         self._obj = self._obj._replace(numchans=numchans)
 
-ChannelInfoTuple = namedtuple('Channel', 'jdate channum srcid call flag1 timeslotmask blackoutmask flag2 bgcolor brushid flag3 srcid2')
+ChannelInfoTuple = namedtuple('ChannelInfo', 'jdate channum srcid call flag1 timeslotmask blackoutmask flag2 bgcolor brushid flag3 srcid2')
 
 class ciParseFSM(Enum):
     # State machine for parsing curday files.
@@ -252,6 +249,21 @@ class ciParseFSM(Enum):
 
 class ChannelInfo(Thing):
     _listings = []
+
+    def _create(self, channum, srcid, call, jdate=None, 
+            flag1=b'\x81', timeslotmask=b'\xff\xff\xff\xff\xff\xff',
+            blackoutmask=b'\x00\x00\x00\x00\x00\x00', flag2=b'\x82', bgcolor=b'\xff\xff',
+            brushid=b'00', flag3=b'\x03', srcid2=None, listings=[]):
+
+        self._obj = ChannelInfoTuple(jdate=jdate, channum=channum, srcid=srcid,
+            call=call, flag1=flag1, timeslotmask=timeslotmask,
+            blackoutmask=blackoutmask, flag2=flag2, bgcolor=bgcolor,
+            brushid=brushid, flag3=flag3, srcid2=srcid2 if srcid2 is not None else srcid)
+
+        self._listings = listings + [ChannelListing(timeslot=49)]
+
+        if self._obj.jdate is None:
+            self.SetDate()
 
     def _unpack(self):
         self._listings = []
@@ -385,13 +397,21 @@ class ChannelInfo(Thing):
 
         self._obj = self._obj._replace(jdate=bytes([jd]))
 
-ChannelListingTuple = namedtuple('Listing', 'timeslot progflags progtype moviecat unk desc')
+ChannelListingTuple = namedtuple('ChannelListing', 'timeslot progflags progtype moviecat unk desc')
 
 class ChannelListing(Thing):
 
     def IsLastEntry(self):
         #return self._bytes.startswith(b'\x0049\x00')
         return self._obj.timeslot == 49
+
+    def _create(self, timeslot, progflags=1, progtype=34, moviecat=0, unk=0, desc="To Be Announced"):
+        if isinstance(desc, str):
+            desc = bytes(desc.encode())
+        if timeslot == 49:
+            self._obj = ChannelListingTuple(49, 0, 0, 0, 0, b'')
+        else:
+            self._obj = ChannelListingTuple(timeslot, progflags, progtype, moviecat, unk, desc)
 
     def _unpack(self):
         if self._bytes.startswith(b'\x0049\x00'):
@@ -437,6 +457,10 @@ class Curday(Thing):
 
     With serious props to: http://prevueguide.com/wiki/Prevue_Emulation:Curday.dat_and_Nxtday.dat
     """
+
+    def _create(self, header, channels):
+        self._obj = CurdayTuple(header, channels)
+        self._obj.header.SetNumChans(len(self._obj.channels))
 
     def _unpack(self):
         state = cdParseFSM.ParseHeader
@@ -524,19 +548,47 @@ def pack_file(fname, curday):
     with open(fname, 'wb') as fp:
         fp.write(bytes(curday))
 
-o = unpack_file(fcurday)
+if __name__ == '__main__':
 
-# UGLY HACKS FOLLOW
-o.GetHeader()._obj.flags._obj = o._obj.header._obj.flags._obj._replace(timezone=6)
-o.GetHeader()._obj = o._obj.header._obj._replace(icao=b'KROC', city=b'Rochester')
-o.GetHeader().SetDate()
-for c in o.GetChannels():
-    c.SetDate()
+    if True:
+        hf = HeaderFlags()
+        h = Header()
 
-print(o.GetHeader())
-for c in o.GetChannels():
-    print("  %s" % c)
-    for l in c.GetListings():
-        print("    %s" % l)
+        c = [
+              ChannelInfo(channum=b'  69 ', srcid=b'THC', call=b'HIST', flag1=b'\x81', timeslotmask=b'\xff\xff\xff\xff\xff\xff',
+                blackoutmask=b'\x00\x00\x00\x00\x00\x00', flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
+                srcid2=b'THC', listings=[
+                    ChannelListing(timeslot=t, desc="Antiques Buttshow %d" % t) for t in range(1, 49)
+                ])
+        ]
 
-pack_file(fcurdayout, o)
+        o = Curday(header=h, channels=c)
+
+
+
+        print(o.GetHeader())
+        for c in o.GetChannels():
+            print("  %s" % c)
+            for l in c.GetListings():
+                print("    %s" % l)
+
+        pack_file(fcurdayout, o)
+
+    if False:
+
+        o = unpack_file(fcurday)
+
+        # UGLY HACKS FOLLOW
+        o.GetHeader()._obj.flags._obj = o._obj.header._obj.flags._obj._replace(timezone=6)
+        o.GetHeader()._obj = o._obj.header._obj._replace(icao=b'KROC', city=b'Rochester')
+        o.GetHeader().SetDate()
+        for c in o.GetChannels():
+            c.SetDate()
+
+        print(o.GetHeader())
+        for c in o.GetChannels():
+            print("  %s" % c)
+            for l in c.GetListings():
+                print("    %s" % l)
+
+        pack_file(fcurdayout, o)
