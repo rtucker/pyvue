@@ -11,7 +11,7 @@ LEFT_JUSTIFY = b'\x19'
 outfile = '../Prevue/local.ads'
 
 my_ads = [
-    [" ** Try the Delicious **", " ** CHEESE SELECTION! **", "", "Available now at your local", "Cheese Vendor"],
+    [" ** Try the Delicious **", " ** CHEESE SELECTION! **", "", " Available now at your local", " Cheese Vendor"],
     [" ", " ", " You are now breathing manually."],
 ]
 

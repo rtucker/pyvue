@@ -8,6 +8,7 @@ fnxtdayout = "../Prevue/nxtday.dat"
 from collections import namedtuple
 from copy import copy
 from enum import Enum
+from pprint import pprint
 import time
 
 def read_byte(fp):
@@ -66,7 +67,7 @@ class HeaderFlags(Thing):
     def _create(self,
         bck=b'A',
         fwd=b'E',
-        scrollspeed=3,
+        scrollspeed=4,
         numads=36,
         linesperad=5,
         unk6=b'N',
@@ -210,7 +211,7 @@ class Header(Thing):
                 b'',
             ])
 
-    def SetDate(self, date=time.gmtime()):
+    def SetDate(self, date=time.localtime()):
         """Set the date in a header.
 
         The curdat format expects a Julian date from 0 to 255, resetting
@@ -230,7 +231,7 @@ class Header(Thing):
     def SetNumChans(self, numchans):
         self._obj = self._obj._replace(numchans=numchans)
 
-ChannelInfoTuple = namedtuple('ChannelInfo', 'jdate channum srcid call flag1 timeslotmask blackoutmask flag2 bgcolor brushid flag3 srcid2')
+ChannelInfoTuple = namedtuple('ChannelInfo', 'jdate channum srcid call flag1 timeslotmask blackoutmask flag2 bgcolor brushid flag3 srcid2 listings')
 
 class ciParseFSM(Enum):
     # State machine for parsing curday files.
@@ -248,7 +249,6 @@ class ciParseFSM(Enum):
     parsesrcid2 = 12
 
 class ChannelInfo(Thing):
-    _listings = []
 
     def _create(self, channum, srcid, call, jdate=None, 
             flag1=b'\x81', timeslotmask=b'\xff\xff\xff\xff\xff\xff',
@@ -258,15 +258,13 @@ class ChannelInfo(Thing):
         self._obj = ChannelInfoTuple(jdate=jdate, channum=channum, srcid=srcid,
             call=call, flag1=flag1, timeslotmask=timeslotmask,
             blackoutmask=blackoutmask, flag2=flag2, bgcolor=bgcolor,
-            brushid=brushid, flag3=flag3, srcid2=srcid2 if srcid2 is not None else srcid)
-
-        self._listings = listings + [ChannelListing(timeslot=49)]
+            brushid=brushid, flag3=flag3, srcid2=srcid2 if srcid2 is not None else srcid,
+            listings=listings)
 
         if self._obj.jdate is None:
             self.SetDate()
 
     def _unpack(self):
-        self._listings = []
         this_state = ciParseFSM.parsejdate
         next_state = ciParseFSM.parsejdate
         first_ptr = 0
@@ -345,6 +343,8 @@ class ChannelInfo(Thing):
                 result.append(self._bytes[first_ptr:cur_ptr].strip(b'\x00'))
                 break
 
+        result.append([])
+
         self._obj = ChannelInfoTuple(*result)
 
     def _pack(self):
@@ -372,15 +372,16 @@ class ChannelInfo(Thing):
 
     def __bytes__(self):
         self._pack()
-        return b''.join([self._bytes] + [bytes(listing) for listing in self._listings])
+        return b''.join([self._bytes] + [bytes(listing) for listing in self._obj.listings + [ChannelListing(timeslot=49)]])
 
     def AddListing(self, listing):
-        self._listings.append(listing)
+        if listing.timeslot != 49:
+            self._obj._replace(listings=self._obj.listings + [listing])
 
     def GetListings(self):
-        return self._listings
+        return self._obj.listings
 
-    def SetDate(self, date=time.gmtime()):
+    def SetDate(self, date=time.localtime()):
         """Set the date in a channel.
 
         The curdat format expects a Julian date from 0 to 255, resetting
@@ -406,6 +407,11 @@ class ChannelListing(Thing):
         return self._obj.timeslot == 49
 
     def _create(self, timeslot, progflags=1, progtype=34, moviecat=0, unk=0, desc="To Be Announced"):
+        """
+        timeslot: number from 1 to 48.  Take the target time and convert it
+        to decimal hours (7:30pm = 19.5), subtract Header.timezone, multiply
+        by 2, and subtract 1 for some reason?
+        """
         if isinstance(desc, str):
             desc = bytes(desc.encode())
         if timeslot == 49:
@@ -555,22 +561,126 @@ if __name__ == '__main__':
         h = Header()
 
         c = [
-              ChannelInfo(channum=b'  69 ', srcid=b'THC', call=b'HIST', flag1=b'\x81', timeslotmask=b'\xff\xff\xff\xff\xff\xff',
-                blackoutmask=b'\x00\x00\x00\x00\x00\x00', flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
-                srcid2=b'THC', listings=[
-                    ChannelListing(timeslot=t, desc="Antiques Buttshow %d" % t) for t in range(1, 49)
-                ])
+            ChannelInfo(channum=b'     ', srcid=b'SBP003', call=b'', flag1=b'\x13',
+                        timeslotmask=b'\x00\x00\x00\x00\x00\x00', blackoutmask=b'\x00\x00\x00\x00\x00\x00',
+                        flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03', srcid2=b'SBP003',
+                        listings=[
+                        ]),
+
+            ChannelInfo(channum=b'     ', srcid=b'SBP004', call=b'', flag1=b'\x13',
+                        timeslotmask=b'\x00\x00\x00\x00\x00\x00', blackoutmask=b'\x00\x00\x00\x00\x00\x00',
+                        flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03', srcid2=b'SBP004',
+                        listings=[
+                        ]),
+
+            ChannelInfo(channum=b'     ', srcid=b'L00001', call=b'', flag1=b'\xa2',
+                        timeslotmask=b'\xff\xff\xff\xff\xff\xff', blackoutmask=b'\x00\x00\x00\x00\x00\x00',
+                        flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
+                        listings=[
+                            ChannelListing(timeslot=1, progflags=1, progtype=0, moviecat=0, unk=0,
+                                desc =  b"Hungry?  RIT's Global Village has great dining options, such as "
+                                        b"Salsarita's, Oishii Sushi, the Global Grille, and the Cafe and Market "
+                                        b"at Crossroads!"),
+                        ]),
+
+
+            ChannelInfo(channum=b' 1750', srcid=b'TRACK1', call=b'Track1', flag1=b'\x81',
+                        timeslotmask=b'\xff\xff\xff\xff\xff\xff', blackoutmask=b'\x00\x00\x00\x00\x00\x00',
+                        flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
+                        listings=[
+                            ChannelListing(timeslot=t, desc="Loud Farting Noises") for t in range(1, 49, 2)
+                        ]),
+
+            ChannelInfo(channum=b'  69 ', srcid=b'THC', call=b'HIST', flag1=b'\x81',
+                        timeslotmask=b'\xff\xff\xff\xff\xff\xff', blackoutmask=b'\x00\x00\x00\x00\x00\x00',
+                        flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
+                        listings=[
+                            ChannelListing(timeslot=t, desc="Antiques Buttshow %d" % t) for t in range(1, 49)
+                        ]),
+
+            ChannelInfo(channum=b'     ', srcid=b'L00002', call=b'', flag1=b'\xa2',
+                        timeslotmask=b'\xff\xff\xff\xff\xff\xff', blackoutmask=b'\x00\x00\x00\x00\x00\x00',
+                        flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
+                        listings=[
+                            ChannelListing(timeslot=1, progflags=1, progtype=0, moviecat=0, unk=0,
+                                desc =  b"Please take a moment to thank our sponsors"),
+                        ]),
+
+            ChannelInfo(channum=b' 1770', srcid=b'TRACK2', call=b'Track2', flag1=b'\x81',
+                        timeslotmask=b'\xff\xff\xff\xff\xff\xff', blackoutmask=b'\x00\x00\x00\x00\x00\x00',
+                        flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
+                        listings=[
+                            ChannelListing(timeslot=t, desc="John Cage Revival") for t in range(2, 49, 2)
+                        ]),
+
+            ChannelInfo(channum=b'  97 ', srcid=b'YV1002', call=b'VC1', flag1=b'\x96',
+                        timeslotmask=b'\xff\xff\xff\xff\xff\xff', blackoutmask=b'\x00\x00\x00\x00\x00\x00',
+                        flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
+                        listings=[
+                            ChannelListing(timeslot=1, progflags=2, progtype=1, moviecat=4, unk=0,
+                                desc=b'"Pee-wee\'s Big Adventure" \x9b (1985) Paul Reubens, Elizabeth Daily. Pee-wee Herman '
+                                     b'searches for his missing bicycle. | (1 hr 30 min)'),
+
+                            ChannelListing(timeslot=4, progflags=2, progtype=1, moviecat=9, unk=0,
+                                desc=b'"The Blair Witch Project" \x84 (1999) Heather Donahue, Michael Williams. Independent '
+                                     b'hit about student filmmakers who are terrorized in the forest. \x91 | (1 hr 21 min)'),
+
+                            ChannelListing(timeslot=7, progflags=2, progtype=1, moviecat=18, unk=0,
+                                desc=b'"The Matrix" \x84 (1999) Keanu Reeves, Laurence Fishburne. Dazzling special effects '
+                                     b'frame a compelling story about a hacker on the run. \x91 | (2 hrs 28 min)'),
+
+                            ChannelListing(timeslot=14, progflags=2, progtype=1, moviecat=4, unk=0,
+                                desc=b'"Pee-wee\'s Big Adventure" \x9b (1985) Paul Reubens, Elizabeth Daily. Pee-wee Herman '
+                                     b'searches for his missing bicycle. | (1 hr 30 min)'),
+
+                            ChannelListing(timeslot=17, progflags=2, progtype=1, moviecat=9, unk=0,
+                                desc=b'"The Blair Witch Project" \x84 (1999) Heather Donahue, Michael Williams. Independent '
+                                     b'hit about student filmmakers who are terrorized in the forest. \x91 | (1 hr 21 min)'),
+
+                            ChannelListing(timeslot=21, progflags=2, progtype=1, moviecat=18, unk=0,
+                                desc=b'"The Matrix" \x84 (1999) Keanu Reeves, Laurence Fishburne. Dazzling special effects '
+                                     b'frame a compelling story about a hacker on the run. \x91 | (2 hrs 28 min)'),
+
+                            ChannelListing(timeslot=24, progflags=2, progtype=1, moviecat=4, unk=0,
+                                desc=b'"Pee-wee\'s Big Adventure" \x9b (1985) Paul Reubens, Elizabeth Daily. Pee-wee Herman '
+                                     b'searches for his missing bicycle. | (1 hr 30 min)'),
+
+                            ChannelListing(timeslot=27, progflags=2, progtype=1, moviecat=9, unk=0,
+                                desc=b'"The Blair Witch Project" \x84 (1999) Heather Donahue, Michael Williams. Independent '
+                                     b'hit about student filmmakers who are terrorized in the forest. \x91 | (1 hr 21 min)'),
+
+                            ChannelListing(timeslot=31, progflags=2, progtype=1, moviecat=18, unk=0,
+                                desc=b'"The Matrix" \x84 (1999) Keanu Reeves, Laurence Fishburne. Dazzling special effects '
+                                     b'frame a compelling story about a hacker on the run. \x91 | (2 hrs 28 min)'),
+
+                            ChannelListing(timeslot=38, progflags=2, progtype=1, moviecat=4, unk=0,
+                                desc=b'"Pee-wee\'s Big Adventure" \x9b (1985) Paul Reubens, Elizabeth Daily. Pee-wee Herman '
+                                     b'searches for his missing bicycle. | (1 hr 30 min)'),
+
+                            ChannelListing(timeslot=41, progflags=2, progtype=1, moviecat=9, unk=0,
+                                desc=b'"The Blair Witch Project" \x84 (1999) Heather Donahue, Michael Williams. Independent '
+                                     b'hit about student filmmakers who are terrorized in the forest. \x91 | (1 hr 21 min)'),
+
+                            ChannelListing(timeslot=44, progflags=2, progtype=1, moviecat=18, unk=0,
+                                desc=b'"The Matrix" \x84 (1999) Keanu Reeves, Laurence Fishburne. Dazzling special effects '
+                                     b'frame a compelling story about a hacker on the run. \x91 | (2 hrs 28 min)'),
+                        ]),
+            ChannelInfo(channum=b'     ', srcid=b'PRV002', call=b'', flag1=b'\xa0',
+                        timeslotmask=b'\xff\xff\xff\xff\xff\xff', blackoutmask=b'\x00\x00\x00\x00\x00\x00',
+                        flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
+                        listings=[
+                            ChannelListing(timeslot=t, desc=b"BSidesROC 2016. \xa9 2016 World Cavalcade of Cheese")
+                                if t % 2 == 0 else
+                            ChannelListing(timeslot=t, desc=b"www.bsidesroc.com")
+                                for t in range(1, 49, 1)
+                        ]),
+
+
         ]
 
         o = Curday(header=h, channels=c)
 
-
-
-        print(o.GetHeader())
-        for c in o.GetChannels():
-            print("  %s" % c)
-            for l in c.GetListings():
-                print("    %s" % l)
+        pprint(o)
 
         pack_file(fcurdayout, o)
 
@@ -592,3 +702,12 @@ if __name__ == '__main__':
                 print("    %s" % l)
 
         pack_file(fcurdayout, o)
+
+    if False:
+        o = unpack_file(fcurday)
+
+        print(o.GetHeader())
+        for c in o.GetChannels():
+            print("  %s" % c)
+            for l in c.GetListings():
+                print("    %s" % l)
