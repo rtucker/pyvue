@@ -7,6 +7,10 @@ from collections import namedtuple
 fcurdayout = "../Prevue/curday.dat"
 TIMEZONE=6
 
+def get_git_revision():
+    import subprocess
+    return subprocess.check_output(["git", "describe"]).decode().strip()
+
 def iter_msg(msgs, seed=0):
     if len(msgs) > 1:
         tsrange = range(1, 49)
@@ -135,7 +139,8 @@ if __name__ == '__main__':
     track_flag1     = b'\x84'
     listing_flag1   = b'\x81'
 
-    generated_at = bytes("Data loaded at {0.hour:02}:{0.minute:02}:{0.second:02}".format(datetime.now()).encode())
+
+    generated_at = "Generated {0.hour:02}:{0.minute:02}:{0.second:02} by PyVUE {1}".format(datetime.now(), get_git_revision())
 
     hf = HeaderFlags(timezone=TIMEZONE)
     h = Header(flags=hf)
@@ -159,7 +164,7 @@ if __name__ == '__main__':
                     timeslotmask=b'\xff\xff\xff\xff\xff\xff', blackoutmask=b'\x00\x00\x00\x00\x00\x00',
                     flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
                     listings=[
-                        ChannelListing(timeslot=1, desc=generated_at)
+                        ChannelListing(timeslot=1, desc=bytes(generated_at.encode()))
                     ]),
 
         # First listing displayed.
