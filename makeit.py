@@ -55,10 +55,10 @@ if __name__ == '__main__':
     top_messages = [
         b"Hungry?  RIT's Global Village has great dining options, such"
         b" as Salsarita's, Oishii Sushi, the Global Grille, and the Cafe"
-        b" and Market at Crossroads!",
+        b" and Market at Crossroads.",
 
-        b"Marty's Meats will be parked outside the North Entrance from 11am"
-        b" to 3pm today!",
+        b"\x9f Marty's Meats will be parked outside the North Entrance from 11am"
+        b" to 3pm today!\x9f",
 
         b"Check out the Hacker Store!  Buy cool things!",
 
@@ -79,8 +79,13 @@ if __name__ == '__main__':
     all_mask        =   get_mask(on=all_timeslots)
     plenary_mask    =   get_mask(on=plenary_timeslots)
     track_mask      =   get_mask(on=track_timeslots)
-
     funny_mask      =   get_mask(off=plenary_timeslots+track_timeslots)
+
+    if True:
+        all_mask     = b'\xff\xff\xff\xff\xff\xff'
+        plenary_mask = b'\xff\xff\xff\xff\xff\xff'
+        track_mask   = b'\xff\xff\xff\xff\xff\xff'
+        funny_mask   = b'\xff\xff\xff\xff\xff\xff'
 
     plenary_schedule    =   [
         ScheduleItem(2, time(9,00), "\"Breakfast\" Ops, volunteers, attendees, and speakers consume the most important meal of the day.", 30),
@@ -181,8 +186,8 @@ if __name__ == '__main__':
                     timeslotmask=plenary_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
                     flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
                     listings=list(iter_msg([
-                        b"Plenary sessions are located in the big auditorium on the main level, as"
-                        b" well as the large atrium in the registration area."
+                        b"Multicast sessions are located in the big auditorium on the"
+                        b" main level, with overflow into the large atrium."
                         ])),
                     ),
 
@@ -199,7 +204,8 @@ if __name__ == '__main__':
                     timeslotmask=track_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
                     flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
                     listings=list(iter_msg([
-                        b"Track 1 is in the big auditorium on the main level.  Seating capacity is 150."
+                        b"Track 1 is in the big auditorium on the main level. Seating"
+                        b" capacity is 150."
                         ])),
                     ),
 
@@ -216,7 +222,7 @@ if __name__ == '__main__':
                     timeslotmask=track_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
                     flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
                     listings=list(iter_msg([
-                        b"Track 2 is god-knows-where.  Seating capacity is a lot, but don't push it."
+                        b"Track 2 is located out back, behind the dumpsters."
                         ])),
                     ),
 
@@ -233,7 +239,7 @@ if __name__ == '__main__':
                     timeslotmask=track_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
                     flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
                     listings=list(iter_msg([
-                        b"Track 3 is god-knows-where.  Seating capacity is a lot, but don't push it."
+                        b"Track 3 is in the back of Mark's car."
                         ])),
                     ),
 
@@ -280,7 +286,8 @@ if __name__ == '__main__':
                     timeslotmask=all_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
                     flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
                     listings=list(iter_msg([
-                        b"Capture The Flag is located in the lounge area."
+                        b"Hacker Battleship is located in the lounge area. Visit"
+                        b" www.bsidesroc.com/hacker-battleship/ for more information."
                         ])),
                     ),
 
@@ -289,7 +296,7 @@ if __name__ == '__main__':
                     timeslotmask=all_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
                     flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
                     listings=[
-                        ChannelListing(timeslot=ts, desc=b"Capture The Flag Competition") for ts in range(1,49,3)
+                        ChannelListing(timeslot=ts, progtype=5, desc=b"Hacker Battleship") for ts in range(1,49,3)
                     ]),
 
 
@@ -332,6 +339,15 @@ if __name__ == '__main__':
                         ChannelListing(timeslot=t, desc=b"in ur iPhone, hakin ur snapchatz <3") for t in range(2, 49, 3)
                     ]),
 
+        ChannelInfo(channum=b' 1076', srcid=b'VHDL', call=b'VHDL', flag1=listing_flag1,
+                    timeslotmask=funny_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
+                    flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
+                    listings=[
+                        ChannelListing(timeslot=int(1+t*2), desc=b"end architecture ; -- arch")
+                            if t % 2 == 0 else
+                        ChannelListing(timeslot=int(1+t*2), desc=b"end architecture arch;")
+                            for t in range(1, 24, 1)
+                    ]),
 
         ChannelInfo(channum=b' 1337', srcid=b'JYNIK', call=b'Jynik', flag1=listing_flag1,
                     timeslotmask=funny_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
@@ -340,16 +356,6 @@ if __name__ == '__main__':
                         ChannelListing(timeslot=int(t*2), desc=b"Yak Shaving for Dummies \x9f")
                             if t % 2 == 0 else
                         ChannelListing(timeslot=int(t*2), desc=b"Yak Shaving for Professionals \x9c")
-                            for t in range(1, 24, 1)
-                    ]),
-
-        ChannelInfo(channum=b' 1076', srcid=b'VHDL', call=b'vHDl', flag1=listing_flag1,
-                    timeslotmask=funny_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
-                    flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
-                    listings=[
-                        ChannelListing(timeslot=int(1+t*2), desc=b"end architecture ; -- arch")
-                            if t % 2 == 0 else
-                        ChannelListing(timeslot=int(1+t*2), desc=b"end architecture arch;")
                             for t in range(1, 24, 1)
                     ]),
 

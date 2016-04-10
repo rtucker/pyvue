@@ -143,7 +143,7 @@ class HeaderFlags(Thing):
                 self._obj.unk15,
                 self._obj.unk16,
             ])
-            print("Packing HeaderFlags: {}".format(self._bytes))
+            #print("Packing HeaderFlags: {}".format(self._bytes))
 
 HeaderTuple = namedtuple('Header', 'flags unk0 drev icao city jdate numchans unk1 unk2')
 
@@ -206,7 +206,7 @@ class Header(Thing):
                 bytes(str(self._obj.unk2).encode()),
                 b'',
             ])
-            print("Packing Header: {}".format(self._bytes))
+            #print("Packing Header: {}".format(self._bytes))
 
     def SetDate(self, date=time.localtime()):
         """Set the date in a header.
@@ -366,7 +366,7 @@ class ChannelInfo(Thing):
                     self._obj.srcid2
                 ),
             ])
-            print("Packing ChannelInfo: {}".format(self._bytes))
+            #print("Packing ChannelInfo: {}".format(self._bytes))
 
     def __bytes__(self):
         self._pack()
@@ -446,7 +446,7 @@ class ChannelListing(Thing):
                 ])
             else:
                 self._bytes = b'\x0049\x00'
-            print("Packing ChannelListing: {}".format(self._bytes))
+            #print("Packing ChannelListing: {}".format(self._bytes))
 
 class cdParseFSM(Enum):
     # State machine for parsing curday files.
