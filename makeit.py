@@ -79,40 +79,50 @@ if __name__ == '__main__':
     all_mask        =   get_mask(on=all_timeslots)
     plenary_mask    =   get_mask(on=plenary_timeslots)
     track_mask      =   get_mask(on=track_timeslots)
-    funny_mask      =   get_mask(off=plenary_timeslots+track_timeslots)
+    funny_mask      =   get_mask(off=all_timeslots)
 
-    if True:
+    if False:
         all_mask     = b'\xff\xff\xff\xff\xff\xff'
         plenary_mask = b'\xff\xff\xff\xff\xff\xff'
         track_mask   = b'\xff\xff\xff\xff\xff\xff'
         funny_mask   = b'\xff\xff\xff\xff\xff\xff'
 
+    if True:
+        plenary_mask = all_mask
+        track_mask   = all_mask
+
     plenary_schedule    =   [
         ScheduleItem(2, time(9,00), "\"Breakfast\" Ops, volunteers, attendees, and speakers consume the most important meal of the day.", 30),
         ScheduleItem(2, time(9,30), "\"Boot\" Conference Program Counter is set to the boot vector and conference execution begins.", 30),
-        ScheduleItem(2, time(12,00), "\"Keynote\" Description goes here.", 60),
-        ScheduleItem(1, time(13,00), "Lunch", 60),
-        ScheduleItem(2, time(18,00), "\"Closing Ceremony\" CTF results, prizes, and announcements are promulgated to the masses.", 60),
+        ScheduleItem(1, time(10,00), "Off air", 0),
+        ScheduleItem(2, time(12,00), "\"Keynote\" Description goes here. It's going to be super bonzer tho.", 60),
+        ScheduleItem(2, time(13,00), "\"Lunch\" Hackers need food. You are a hacker. You need food. Consume it now.", 60),
+        ScheduleItem(1, time(14,00), "Off air", 0),
+        ScheduleItem(2, time(18,00), "\"Closing Ceremony\" CTF results, prizes, and announcements are promulgated to the teeming masses.", 60),
         ScheduleItem(1, time(19,00), "Teardown", 30),
-        ScheduleItem(1, time(19,30), "Getting so drunk", 30),
+        ScheduleItem(1, time(19,30), "\"Getting so drunk\" So, so drunk.", 180),
     ]
 
     track1_schedule     =   [
         ScheduleItem(2, time(10,00), "To be announced", 50),
         ScheduleItem(2, time(11,00), "To be announced", 50),
+        ScheduleItem(1, time(12,00), "Off air", 0),
         ScheduleItem(2, time(14,00), "To be announced", 50),
         ScheduleItem(2, time(15,00), "To be announced", 50),
         ScheduleItem(2, time(16,00), "To be announced", 50),
         ScheduleItem(2, time(17,00), "To be announced", 50),
+        ScheduleItem(1, time(18,00), "Off air", 0),
     ]
 
     track2_schedule     =   [
         ScheduleItem(2, time(10,00), "To be announced", 50),
         ScheduleItem(2, time(11,00), "To be announced", 50),
+        ScheduleItem(1, time(12,00), "Off air", 0),
         ScheduleItem(2, time(14,00), "To be announced", 50),
         ScheduleItem(2, time(15,00), "To be announced", 50),
         ScheduleItem(2, time(16,00), "To be announced", 50),
         ScheduleItem(2, time(17,00), "To be announced", 50),
+        ScheduleItem(1, time(18,00), "Off air", 0),
     ]
 
     track3_schedule     =   [
@@ -120,6 +130,7 @@ if __name__ == '__main__':
         ScheduleItem(2, time(10,30), "To be announced", 20),
         ScheduleItem(2, time(11,00), "To be announced", 20),
         ScheduleItem(2, time(11,30), "To be announced", 20),
+        ScheduleItem(1, time(12,00), "Off air", 0),
         ScheduleItem(2, time(14,00), "To be announced", 20),
         ScheduleItem(2, time(14,30), "To be announced", 20),
         ScheduleItem(2, time(15,00), "To be announced", 20),
@@ -128,15 +139,24 @@ if __name__ == '__main__':
         ScheduleItem(2, time(16,30), "To be announced", 20),
         ScheduleItem(2, time(17,00), "To be announced", 20),
         ScheduleItem(2, time(17,30), "To be announced", 20),
+        ScheduleItem(1, time(18,00), "Off air", 0),
     ]
 
     commroom_schedule     =   [
-        ScheduleItem(2, time(10,00), "Community Programming", 60),
-        ScheduleItem(2, time(11,00), "Community Programming", 60),
-        ScheduleItem(2, time(14,00), "Community Programming", 60),
-        ScheduleItem(2, time(15,00), "Community Programming", 60),
-        ScheduleItem(2, time(16,00), "Community Programming", 60),
-        ScheduleItem(2, time(17,00), "Community Programming", 60),
+        ScheduleItem(2, time(10,00), "Community Programming", 0),
+        ScheduleItem(2, time(10,30), "TOOOL Talk", 30),
+        ScheduleItem(2, time(11,00), "Community Programming", 0),
+        ScheduleItem(2, time(11,30), "TOOOL Talk", 30),
+        ScheduleItem(2, time(12,00), "Community Programming", 0),
+        ScheduleItem(2, time(13,00), "Lunch Break", 60),
+        ScheduleItem(2, time(14,00), "Community Programming", 0),
+        ScheduleItem(2, time(14,30), "TOOOL Talk", 30),
+        ScheduleItem(2, time(15,00), "Community Programming", 0),
+        ScheduleItem(2, time(15,30), "TOOOL Talk", 30),
+        ScheduleItem(2, time(16,00), "Community Programming", 0),
+        ScheduleItem(2, time(16,30), "Mini-Crypto Party", 30),
+        ScheduleItem(2, time(17,00), "Key Signing Party", 60),
+        ScheduleItem(1, time(18,00), "Off air", 0),
     ]
 
     notice_flag1    = b'\xa2'
@@ -165,16 +185,10 @@ if __name__ == '__main__':
         #             listings=[
         #             ]),
 
-        ChannelInfo(channum=b'     ', srcid=b'PRV001', call=b'', flag1=b'\xa0',
-                    timeslotmask=b'\xff\xff\xff\xff\xff\xff', blackoutmask=b'\x00\x00\x00\x00\x00\x00',
-                    flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
-                    listings=[
-                        ChannelListing(timeslot=1, desc=bytes(generated_at.encode()))
-                    ]),
 
         # First listing displayed.
         ChannelInfo(channum=b'     ', srcid=b'SPAM', call=b'', flag1=notice_flag1,
-                    timeslotmask=plenary_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
+                    timeslotmask=all_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
                     flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
                     listings=list(iter_msg(top_messages)),
                     ),
@@ -183,16 +197,16 @@ if __name__ == '__main__':
 
         # About Plenary
         ChannelInfo(channum=b'     ', srcid=b'TRK000', call=b'', flag1=info_flag1,
-                    timeslotmask=plenary_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
+                    timeslotmask=all_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
                     flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
                     listings=list(iter_msg([
-                        b"Multicast sessions are located in the big auditorium on the"
-                        b" main level, with overflow into the large atrium."
+                        b"Multicast sessions are located in the big Track 1 auditorium"
+                        b" on the main level, with overflow into the large atrium."
                         ])),
                     ),
 
         # Plenary Listings
-        ChannelInfo(channum=b'  0  ', srcid=b'TRACK0', call=b'ff02::', flag1=track_flag1,
+        ChannelInfo(channum=b'  1  ', srcid=b'TRACK0', call=b'ff02::', flag1=track_flag1,
                     timeslotmask=plenary_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
                     flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
                     listings=iter_schedule(plenary_schedule)),
@@ -201,7 +215,7 @@ if __name__ == '__main__':
 
         # About Track 1
         ChannelInfo(channum=b'     ', srcid=b'TRK001', call=b'', flag1=info_flag1,
-                    timeslotmask=track_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
+                    timeslotmask=all_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
                     flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
                     listings=list(iter_msg([
                         b"Track 1 is in the big auditorium on the main level. Seating"
@@ -219,7 +233,7 @@ if __name__ == '__main__':
 
         # About Track 2
         ChannelInfo(channum=b'     ', srcid=b'TRK002', call=b'', flag1=info_flag1,
-                    timeslotmask=track_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
+                    timeslotmask=all_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
                     flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
                     listings=list(iter_msg([
                         b"Track 2 is located out back, behind the dumpsters."
@@ -236,7 +250,7 @@ if __name__ == '__main__':
 
         # About Track 3
         ChannelInfo(channum=b'     ', srcid=b'TRK003', call=b'', flag1=info_flag1,
-                    timeslotmask=track_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
+                    timeslotmask=all_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
                     flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
                     listings=list(iter_msg([
                         b"Track 3 is in the back of Mark's car."
@@ -363,7 +377,7 @@ if __name__ == '__main__':
                     timeslotmask=funny_mask, blackoutmask=b'\x00\x00\x00\x00\x00\x00',
                     flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
                     listings=[
-                        ChannelListing(timeslot=t, desc=b"John Cage Revival \x7c") for t in range(2, 49, 2)
+                        ChannelListing(timeslot=t, progtype=5, desc=b"John Cage Match \x7c") for t in range(2, 49, 2)
                     ]),
 
         ChannelInfo(channum=b' 2817', srcid=b'BRAINS', call=b'Brains', flag1=listing_flag1,
@@ -430,6 +444,13 @@ if __name__ == '__main__':
         #             ]),
 
 
+        # Updated at...
+        ChannelInfo(channum=b'     ', srcid=b'PRV001', call=b'', flag1=b'\xa0',
+                    timeslotmask=b'\xff\xff\xff\xff\xff\xff', blackoutmask=b'\x00\x00\x00\x00\x00\x00',
+                    flag2=b'\x82', bgcolor=b'\xff\xff', brushid=b'00', flag3=b'\x03',
+                    listings=[
+                        ChannelListing(timeslot=1, desc=bytes(generated_at.encode()))
+                    ]),
 
         # Last line!
         ChannelInfo(channum=b'     ', srcid=b'PRV002', call=b'', flag1=b'\xa0',
